@@ -1,0 +1,33 @@
+# Tools and Technologies Used
+
+## Frameworks & Libraries
+- Next.js (React framework for SSR/SSG)
+- React (UI library)
+- Prisma (ORM for database access)
+- better-sqlite3 (SQLite database driver)
+
+## Styling
+- CSS (global styles)
+- PostCSS (CSS processing)
+
+## API & Backend
+- Next.js API routes
+- Vapi.ai (Voice AI integration)
+- Twilio (telephony integration, via webhooks)
+- Ngrok (local tunnel for webhook testing)
+
+## Database
+- SQLite (local development database)
+
+## Dev Tools
+- ESLint (linting)
+- TypeScript (static typing)
+
+## Deployment/Environment
+- Environment variables (.env.local)
+
+## Miscellaneous
+- 11labs (AI voice provider)
+
+---
+This list is based on the current project structure, configuration, and dependencies found in your workspace as of March 17, 2026.

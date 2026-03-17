@@ -1,0 +1,78 @@
+# Project Structure and Key Files: retailytics
+
+## Root Files
+- eslint.config.mjs
+- next-env.d.ts
+- next.config.ts
+- package.json
+- postcss.config.mjs
+- prisma.config.ts
+- README.md
+- tsconfig.json
+
+## Folders
+
+### app/
+- globals.css
+- layout.tsx
+- page.tsx
+- favicon.ico
+- onboarding/page.tsx (Onboarding form for business registration)
+- api/business/route.ts (API route for business creation)
+
+### lib/
+- prisma.ts (Prisma client setup)
+
+### prisma/
+- schema.prisma (Prisma schema: User, Business, Product, Order, OrderItem models)
+- migrations/
+  - migration_lock.toml
+  - 20260316162638_init/migration.sql
+
+### public/
+- window.svg
+- vercel.svg
+- next.svg
+- globe.svg
+- file.svg
+
+## Other
+- .gitignore
+- dev.db (SQLite database)
+- package-lock.json
+
+---
+
+## Key Features
+- Next.js app with onboarding page for business registration
+- API route for creating businesses in the database
+- Prisma ORM with SQLite
+- Models: User, Business, Product, Order, OrderItem
+- Tailwind CSS for styling
+
+---
+
+## Example: Onboarding Page (app/onboarding/page.tsx)
+- Collects: name, type, city, locality, areaType, customerAgeRange, deliveryRadius
+- Validates all fields
+- Submits to /api/business (POST)
+
+## Example: API Route (app/api/business/route.ts)
+- Receives POST request
+- Creates business in database using Prisma
+
+## Example: Prisma Schema (prisma/schema.prisma)
+- User, Business, Product, Order, OrderItem models with relations
+
+---
+
+## How to Continue
+- Install dependencies: npm install
+- Run dev server: npm run dev
+- Migrate DB: npx prisma migrate dev
+- Edit onboarding form or add new features as needed
+
+---
+
+## For another AI: 
+This summary covers the structure, main files, and features of the project as of March 16, 2026. Use this as a starting point for further development or analysis.

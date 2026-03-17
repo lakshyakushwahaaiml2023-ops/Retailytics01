@@ -1,0 +1,61 @@
+datasource db {
+  provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id         String     @id @default(cuid())
+  email      String     @unique
+  role       String
+  businesses Business[]
+}
+
+model Business {
+  id               String    @id @default(cuid())
+  name             String
+  type             String
+  city             String
+  locality         String
+  areaType         String
+  customerAgeRange String
+  deliveryRadius   Int
+  operatingHours   String    @default("9AM-9PM")
+  ownerId          String
+  lat              Float     @default(22.5518)
+  lng              Float     @default(75.7720)
+  owner            User      @relation(fields: [ownerId], references: [id])
+  products         Product[]
+  orders           Order[]
+}
+
+model Product {
+  id         String      @id @default(cuid())
+  name       String
+  price      Float
+  stock      Int
+  businessId String
+  business   Business    @relation(fields: [businessId], references: [id])
+  orderItems OrderItem[]
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  customerName String
+  address      String
+  status       String
+  businessId   String
+  business     Business    @relation(fields: [businessId], references: [id])
+  items        OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+}

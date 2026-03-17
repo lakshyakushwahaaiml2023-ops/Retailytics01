@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<presentation>
+  <slide>
+    <title>Retailytics: Project Overview</title>
+    <bullets>
+      <bullet>AI-powered retail analytics & order management</bullet>
+      <bullet>For local shops and customers</bullet>
+      <bullet>Key Technologies: Next.js, React, Prisma, SQLite, Vapi.ai, Twilio, 11labs, Ngrok</bullet>
+    </bullets>
+  </slide>
+  <slide>
+    <title>Core Features & Functions</title>
+    <bullets>
+      <bullet>Customer storefront for browsing & ordering</bullet>
+      <bullet>Real-time order tracking & delivery progress</bullet>
+      <bullet>AI voice agent for automated shop owner calls</bullet>
+      <bullet>Shop-to-customer messaging system</bullet>
+      <bullet>Admin catalog & product management</bullet>
+    </bullets>
+  </slide>
+  <slide>
+    <title>Scalability & Architecture</title>
+    <bullets>
+      <bullet>Modular Next.js API routes for easy expansion</bullet>
+      <bullet>Prisma ORM (migratable to Postgres/MySQL)</bullet>
+      <bullet>Async operations & polling for real-time updates</bullet>
+      <bullet>Cloud/webhook ready (Twilio, Vapi.ai, Ngrok)</bullet>
+      <bullet>Stateless, serverless-friendly design</bullet>
+    </bullets>
+  </slide>
+  <slide>
+    <title>Extensibility & Roadmap</title>
+    <bullets>
+      <bullet>Easy integration: payments, delivery partners</bullet>
+      <bullet>Scalable to multiple cities & shop types</bullet>
+      <bullet>Pluggable AI/voice models (OpenAI, 11labs)</bullet>
+      <bullet>Analytics dashboard for business insights</bullet>
+    </bullets>
+  </slide>
+</presentation>

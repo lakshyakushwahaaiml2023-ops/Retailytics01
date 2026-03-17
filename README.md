@@ -1,41 +1,89 @@
-<<<<<<< HEAD
 # Retailytics
-Retailytics is a Next.js retail analytics and storefront platform with real-time dashboards, AI chat, and multi-store product comparison. 
-=======
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+Retailytics is a modern retail analytics and storefront platform built with Next.js, React, and Prisma. This guide will walk you through running the project locally after cloning the repository.
+
+## Features
+- Real-time business analytics dashboard
+- Customer storefront and messaging
+- AI-powered chat agent
+- Multi-store product comparison
+- Voice agent integration (Twilio, Vapi.ai, 11labs)
+
+---
 
 ## Getting Started
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 1. Clone the Repository
+```
+git clone https://github.com/lakshyakushwahaaiml2023-ops/Retailytics.git
+cd Retailytics
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Install Dependencies
+```
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Set Up the Database
+Retailytics uses SQLite via Prisma.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- The default database file is `dev.db` (already included for demo).
+- To reset or seed demo data:
+```
+npm run prisma:seed
+```
+- To apply migrations (if needed):
+```
+npx prisma migrate dev
+```
 
-## Learn More
+### 4. Configure Environment Variables
+Create a `.env.local` file in the project root. Example:
+```
+DATABASE_URL="file:./dev.db"
+# Add any API keys or secrets needed for Twilio, Vapi.ai, etc.
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 5. Run the Development Server
+```
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment
 
-## Deploy on Vercel
+### Deploying to Vercel (Recommended)
+1. Push your code to GitHub.
+2. Go to [vercel.com](https://vercel.com) and sign up/log in.
+3. Import your Retailytics repo and click Deploy.
+4. Add any required environment variables in the Vercel dashboard.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Other Platforms
+You can also deploy to Netlify, Render, or any platform supporting Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
->>>>>>> a122001 (Initial commit from Create Next App)
+---
+
+## Additional Notes
+- For voice/AI features, set up Twilio, Vapi.ai, and 11labs credentials in `.env.local`.
+- To seed demo products in multiple stores, use the provided seed scripts in the `prisma/` folder.
+- All API routes are in `app/api/`.
+- For customizations, edit components in `components/` and pages in `app/`.
+
+---
+
+## Troubleshooting
+- If you see database errors, check your `DATABASE_URL` in `.env.local`.
+- For dependency issues, run `npm install` again.
+- For deployment errors, verify environment variables and build logs.
+
+---
+
+## License
+MIT
+
+---
+
+## Contact
+For questions or support, open an issue in the GitHub repo.

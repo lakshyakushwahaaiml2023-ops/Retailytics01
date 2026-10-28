@@ -18,6 +18,7 @@ type Product = {
   shopLng: number;
   deliveryRadius: number;
   operatingHours: string;
+  image?: string;
   distanceKm?: number;
 };
 

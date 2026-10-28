@@ -7,7 +7,7 @@ import path from "path";
 function createPrismaClient() {
   const dbPath = path.resolve(process.cwd(), "dev.db").replace(/\\/g, "/");
   const libsql = createClient({ url: `file:///${dbPath}` });
-  const adapter = new PrismaLibSql(libsql);
+  const adapter = new PrismaLibSql(libsql as any);
   return new PrismaClient({ adapter } as any);
 }
 

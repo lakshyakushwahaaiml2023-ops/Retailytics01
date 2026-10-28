@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import Groq from "groq-sdk";
 import Database from "better-sqlite3";
 import path from "path";
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+import { createChatCompletion } from "@/lib/ai";
 
 function getDB() {
   return new Database(path.join(process.cwd(), "dev.db"));
@@ -97,9 +95,7 @@ OFFLINE SALES DATA:
   - Top offline sellers: ${topOffline.map(p => `${p.productName} (${p.qty} units)`).join(", ") || "No data yet"}
 
 YOUR TASK:
-1. Search the web for: current news India affecting ${biz.type} retail, seasonal trends India ${new Date().toLocaleString("en-IN", { month: "long" })}, commodity prices India, consumer trends ${biz.city}
-2. Analyse all the above data holistically
-3. Give 6 specific, actionable strategic recommendations
+Analyse the data holistically and provide exactly 6 specific, actionable strategic recommendations.
 
 Each recommendation must be one of these types:
 - STOCK_UP: Add or restock a specific product
@@ -122,14 +118,12 @@ Respond ONLY as valid JSON array, no markdown:
 ]`;
 
   try {
-    const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+    const { content: raw } = await createChatCompletion({
       messages: [{ role: "user", content: prompt }],
       max_tokens: 2048,
       temperature: 0.3,
     });
 
-    const raw = response.choices[0].message.content || "[]";
     const jsonMatch = raw.match(/\[[\s\S]*\]/);
     const recommendations = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
 

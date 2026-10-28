@@ -40,8 +40,8 @@ export default function CheckoutSheet({
 
   // Auto-confirm timer for UPI (30s)
   const [autoConfirmIn, setAutoConfirmIn] = useState(30);
-  const autoConfirmRef = useRef<NodeJS.Timeout>();
-  const countdownRef = useRef<NodeJS.Timeout>();
+  const autoConfirmRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const countdownRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Auto-fill from localStorage
   useEffect(() => {

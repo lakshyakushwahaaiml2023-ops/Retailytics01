@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import Groq from "groq-sdk";
 import twilio from "twilio";
 import Database from "better-sqlite3";
 import path from "path";
 import { randomUUID } from "crypto";
+import { createChatCompletion, createAudioTranscription } from "@/lib/ai";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const twilioClient = twilio(
   process.env.TWILIO_ACCOUNT_SID!,
   process.env.TWILIO_AUTH_TOKEN!
@@ -16,7 +15,6 @@ function getDB() {
 }
 
 async function transcribeRecording(recordingUrl: string): Promise<string> {
-  // Fetch the recording from Twilio
   const accountSid = process.env.TWILIO_ACCOUNT_SID!;
   const authToken = process.env.TWILIO_AUTH_TOKEN!;
   const credentials = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
@@ -31,14 +29,7 @@ async function transcribeRecording(recordingUrl: string): Promise<string> {
   const audioBlob = new Blob([audioBuffer], { type: "audio/mpeg" });
   const audioFile = new File([audioBlob], "recording.mp3", { type: "audio/mpeg" });
 
-  // Use Groq Whisper for transcription
-  const transcription = await groq.audio.transcriptions.create({
-    file: audioFile,
-    model: "whisper-large-v3",
-    language: "hi", // supports Hindi + English mix
-  });
-
-  return transcription.text || "";
+  return createAudioTranscription(audioFile, "hi");
 }
 
 async function parseIntent(transcript: string): Promise<{
@@ -48,8 +39,7 @@ async function parseIntent(transcript: string): Promise<{
   reason: string;
 }> {
   try {
-    const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+    const { content: raw } = await createChatCompletion({
       messages: [{
         role: "user",
         content: `A shop owner said this about a customer order (may be in Hindi, English or mix):
@@ -69,9 +59,9 @@ SPECIAL = has specific instructions (timing, partial order, out of stock item, e
       }],
       max_tokens: 150,
       temperature: 0.1,
+      response_format: { type: "json_object" },
     });
 
-    const raw = response.choices[0].message.content || "{}";
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
 
@@ -94,8 +84,7 @@ async function composeCustomerMessage(params: {
 }): Promise<string> {
   const { shopName, customerName, itemsSummary, total, decision, instructions, estimatedTime, reason } = params;
   try {
-    const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+    const { content: message } = await createChatCompletion({
       messages: [{
         role: "user",
         content: `Write a short WhatsApp message from "${shopName}" to customer "${customerName}".
@@ -117,7 +106,7 @@ Rules:
       max_tokens: 150,
       temperature: 0.4,
     });
-    return response.choices[0].message.content || "";
+    return message || "";
   } catch {
     if (decision === "CONFIRM") {
       return `Hi ${customerName}! Your order from ${shopName} is confirmed. ${estimatedTime ? `Delivery in ${estimatedTime}.` : "We'll deliver it soon!"} Thank you! - ${shopName} Team`;
@@ -131,7 +120,6 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const recordingUrl = formData.get("RecordingUrl") as string;
     const recordingSid = formData.get("RecordingSid") as string;
-    const callSid = formData.get("CallSid") as string;
 
     const { searchParams } = req.nextUrl;
     const orderId = searchParams.get("orderId") || "";
@@ -144,7 +132,6 @@ export async function POST(req: NextRequest) {
     console.log(`Recording URL: ${recordingUrl}`);
 
     if (!recordingUrl || !orderId) {
-      // No recording — owner didn't speak
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna">No response received. Please check your dashboard. Goodbye!</Say>
@@ -152,10 +139,8 @@ export async function POST(req: NextRequest) {
       return new NextResponse(twiml, { headers: { "Content-Type": "text/xml" } });
     }
 
-    // Wait 2 seconds for recording to be ready
     await new Promise(r => setTimeout(r, 2000));
 
-    // Transcribe the recording
     let transcript = "";
     try {
       transcript = await transcribeRecording(recordingUrl);
@@ -165,11 +150,9 @@ export async function POST(req: NextRequest) {
       transcript = "";
     }
 
-    // Parse intent
     const intent = await parseIntent(transcript);
     console.log(`🎯 Intent: ${intent.decision}`);
 
-    // Update order status
     const db = getDB();
     let newStatus = "pending";
     if (intent.decision === "CONFIRM" || intent.decision === "SPECIAL") newStatus = "confirmed";
@@ -179,43 +162,27 @@ export async function POST(req: NextRequest) {
       db.prepare("UPDATE [Order] SET status = ? WHERE id = ?").run(newStatus, orderId);
     }
 
-    // Compose customer message
     const customerMessage = await composeCustomerMessage({
       shopName, customerName, itemsSummary, total,
       decision: intent.decision, instructions: intent.instructions,
       estimatedTime: intent.estimatedTime, reason: intent.reason,
     });
 
-    // Get customer phone
     const order = db.prepare("SELECT phone FROM [Order] WHERE id = ?").get(orderId) as any;
     const customerPhone = order?.phone || "";
 
-    // Store VoiceLog
     try {
-      db.exec(`CREATE TABLE IF NOT EXISTS VoiceLog (
-        id TEXT PRIMARY KEY, orderId TEXT, intent TEXT,
-        transcript TEXT, customerMessage TEXT,
-        createdAt TEXT DEFAULT (datetime('now'))
-      )`);
-      try { db.exec("ALTER TABLE VoiceLog ADD COLUMN customerMessage TEXT DEFAULT ''"); } catch {}
       db.prepare(`INSERT OR REPLACE INTO VoiceLog (id, orderId, intent, transcript, customerMessage)
         VALUES (?, ?, ?, ?, ?)`).run(randomUUID(), orderId, intent.decision, transcript, customerMessage);
     } catch {}
 
-    // Store CustomerMessage
     try {
-      db.exec(`CREATE TABLE IF NOT EXISTS CustomerMessage (
-        id TEXT PRIMARY KEY, orderId TEXT, customerName TEXT,
-        customerPhone TEXT, message TEXT, status TEXT DEFAULT 'pending',
-        createdAt TEXT DEFAULT (datetime('now'))
-      )`);
       db.prepare(`INSERT INTO CustomerMessage (id, orderId, customerName, customerPhone, message)
         VALUES (?, ?, ?, ?, ?)`).run(randomUUID(), orderId, customerName, customerPhone, customerMessage);
     } catch {}
 
     db.close();
 
-    // Delete the recording from Twilio (privacy)
     try {
       await twilioClient.recordings(recordingSid).remove();
     } catch {}
@@ -223,7 +190,6 @@ export async function POST(req: NextRequest) {
     console.log(`✅ Order ${orderId} → ${newStatus}`);
     console.log(`📱 Message: ${customerMessage}`);
 
-    // Return TwiML to end call gracefully
     const confirmMsg = intent.decision === "CONFIRM"
       ? "Got it! Order confirmed. I will notify the customer right away."
       : intent.decision === "CANCEL"

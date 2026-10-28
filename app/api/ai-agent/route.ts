@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import Groq from "groq-sdk";
 import Database from "better-sqlite3";
 import path from "path";
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+import { createChatCompletion, ChatMessage } from "@/lib/ai";
 
 function getDB() {
   return new Database(path.join(process.cwd(), "dev.db"));
@@ -91,7 +89,7 @@ SHOP: ${biz.name} (${biz.type})
 LOCATION: ${biz.locality}, ${biz.city}, MP, India
 CUSTOMERS: Aged ${biz.customerAgeRange}, ${biz.areaType} area
 SEASON: ${season}
-CURRENT WORLD CONTEXT: Middle East tensions affecting LPG supply, summer approaching in MP, post-budget India 2026
+CURRENT WORLD CONTEXT: Summer approaching in MP, live demand tracking in Indore
 
 INVENTORY SUMMARY:
 - Total products: ${products.length}
@@ -132,7 +130,7 @@ Help manage and prioritize orders. Identify patterns in cancellations or delays.
 }
 
 export async function POST(req: NextRequest) {
-  const { bizId, page, question, pageData, history } = await req.json();
+  const { bizId, page, question, history } = await req.json();
 
   if (!question?.trim()) return NextResponse.json({ error: "No question" }, { status: 400 });
 
@@ -141,27 +139,22 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt = buildSystemPrompt(page, ctx);
 
-  // Build conversation history
-  const conversationMessages = [
+  const conversationMessages: ChatMessage[] = [
+    { role: "system", content: systemPrompt },
     ...(history || []).map((m: any) => ({
       role: m.role as "user" | "assistant",
       content: m.content,
     })),
-    { role: "user" as const, content: question },
+    { role: "user", content: question },
   ];
 
   try {
-    const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...conversationMessages,
-      ],
+    const { content: answer } = await createChatCompletion({
+      messages: conversationMessages,
       max_tokens: 600,
       temperature: 0.5,
     });
 
-    const answer = response.choices[0].message.content || "I couldn't generate a response.";
     return NextResponse.json({ answer });
   } catch (err: any) {
     console.error("AI Agent error:", err.message);

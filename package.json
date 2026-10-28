@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "node prisma/seed.mjs",
+    "test:analytics": "node lib/analytics/runTests.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.79.0",
@@ -23,7 +24,8 @@
     "qrcode": "^1.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "twilio": "^5.13.0"
+    "twilio": "^5.13.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

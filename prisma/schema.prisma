@@ -14,7 +14,7 @@ model User {
 }
 
 model Business {
-  id               String    @id @default(cuid())
+  id               String           @id @default(cuid())
   name             String
   type             String
   city             String
@@ -22,33 +22,71 @@ model Business {
   areaType         String
   customerAgeRange String
   deliveryRadius   Int
-  operatingHours   String    @default("9AM-9PM")
+  operatingHours   String           @default("9AM-9PM")
   ownerId          String
-  lat              Float     @default(22.5518)
-  lng              Float     @default(75.7720)
-  owner            User      @relation(fields: [ownerId], references: [id])
+  lat              Float            @default(22.5518)
+  lng              Float            @default(75.7720)
+  phone            String?          @default("")
+  owner            User             @relation(fields: [ownerId], references: [id])
   products         Product[]
   orders           Order[]
+  suppliers        Supplier[]
+  salesHistory     SalesHistory[]
+  recommendations  Recommendation[]
+  agentRuns        AgentRun[]
+  approvals        Approval[]
+  escalations      Escalation[]
+}
+
+model Supplier {
+  id               String    @id @default(cuid())
+  name             String
+  contactName      String?
+  email            String?
+  phone            String
+  category         String
+  leadTimeDays     Int       @default(3)
+  reliabilityScore Float     @default(0.95)
+  businessId       String?
+  business         Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  products         Product[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @default(now()) @updatedAt
 }
 
 model Product {
-  id         String      @id @default(cuid())
-  name       String
-  price      Float
-  stock      Int
-  businessId String
-  business   Business    @relation(fields: [businessId], references: [id])
-  orderItems OrderItem[]
+  id              String           @id @default(cuid())
+  name            String
+  price           Float
+  cost            Float            @default(0.0)
+  stock           Int
+  reorderLevel    Int              @default(10)
+  leadTimeDays    Int              @default(3)
+  category        String           @default("General")
+  image           String?          @default("")
+  businessId      String
+  supplierId      String?
+  business        Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  supplier        Supplier?        @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  orderItems      OrderItem[]
+  salesHistory    SalesHistory[]
+  recommendations Recommendation[]
 }
 
 model Order {
-  id           String      @id @default(cuid())
-  customerName String
-  address      String
-  status       String
-  businessId   String
-  business     Business    @relation(fields: [businessId], references: [id])
-  items        OrderItem[]
+  id            String      @id @default(cuid())
+  customerName  String
+  address       String
+  status        String
+  businessId    String
+  notified      Int?        @default(0)
+  createdAt     String?     @default("CURRENT_TIMESTAMP")
+  phone         String?     @default("")
+  paymentMethod String?     @default("cod")
+  paymentStatus String?     @default("pending")
+  upiRef        String?     @default("")
+  business      Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  items         OrderItem[]
 }
 
 model OrderItem {
@@ -56,6 +94,177 @@ model OrderItem {
   orderId   String
   productId String
   quantity  Int
-  order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model SalesHistory {
+  id         String   @id @default(cuid())
+  productId  String
+  businessId String
+  date       String
+  quantity   Int
+  revenue    Float
+  channel    String   @default("pos")
+  createdAt  DateTime @default(now())
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([productId, date])
+  @@index([businessId, date])
+}
+
+model Signal {
+  id                 String           @id @default(cuid())
+  title              String
+  source             String
+  category           String
+  summary            String
+  impact             String
+  multiplier         Float            @default(1.0)
+  affectedCategories String
+  city               String?          @default("Indore")
+  active             Boolean          @default(true)
+  timestamp          DateTime         @default(now())
+  recommendations    Recommendation[]
+}
+
+model Recommendation {
+  id             String    @id @default(cuid())
+  businessId     String
+  productId      String?
+  signalId       String?
+  type           String
+  title          String
+  action         String
+  reason         String
+  suggestedQty   Int?
+  suggestedPrice Float?
+  urgency        String    @default("Medium")
+  status         String    @default("pending")
+  createdAt      DateTime  @default(now())
+  business       Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  product        Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  signal         Signal?   @relation(fields: [signalId], references: [id], onDelete: SetNull)
+}
+
+model AgentRun {
+  id          String      @id @default(cuid())
+  businessId  String
+  goal        String
+  status      String      @default("pending")
+  plan        String?
+  startedAt   DateTime    @default(now())
+  completedAt DateTime?
+  business    Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  approvals   Approval[]
+  auditLogs   AuditLog[]
+}
+
+model Task {
+  id           String     @id @default(cuid())
+  runId        String
+  title        String
+  agentRole    String
+  status       String     @default("pending")
+  dependencies String     @default("[]")
+  input        String?
+  output       String?
+  retryCount   Int        @default(0)
+  maxRetries   Int        @default(3)
+  errorMessage String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  run          AgentRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  approvals    Approval[]
+}
+
+model Approval {
+  id            String    @id @default(cuid())
+  runId         String?
+  taskId        String?
+  businessId    String
+  actionType    String
+  description   String
+  payload       String
+  estimatedCost Float?
+  status        String    @default("pending")
+  decidedBy     String?
+  decidedAt     DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  run           AgentRun? @relation(fields: [runId], references: [id], onDelete: Cascade)
+  task          Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  business      Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String    @id @default(cuid())
+  runId      String?
+  businessId String?
+  actor      String
+  action     String
+  details    String
+  level      String    @default("info")
+  timestamp  DateTime  @default(now())
+  run        AgentRun? @relation(fields: [runId], references: [id], onDelete: Cascade)
+}
+
+model Escalation {
+  id         String   @id @default(cuid())
+  businessId String
+  orderId    String?
+  type       String
+  target     String
+  status     String   @default("pending")
+  retryCount Int      @default(0)
+  reason     String
+  metadata   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model VoiceLog {
+  id              String   @id @default(cuid())
+  orderId         String?
+  intent          String?
+  transcript      String?
+  customerMessage String?  @default("")
+  createdAt       String?  @default("CURRENT_TIMESTAMP")
+}
+
+model CustomerProfile {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String   @unique
+  address   String
+  city      String?  @default("Indore")
+  lat       Float?
+  lng       Float?
+  createdAt String?  @default("CURRENT_TIMESTAMP")
+}
+
+model OfflineSale {
+  id          String   @id @default(cuid())
+  businessId  String
+  productId   String?
+  productName String
+  quantity    Int      @default(1)
+  price       Float
+  total       Float
+  note        String?  @default("")
+  soldAt      String?  @default("CURRENT_TIMESTAMP")
+  createdAt   String?  @default("CURRENT_TIMESTAMP")
+}
+
+model CustomerMessage {
+  id            String   @id @default(cuid())
+  orderId       String?
+  customerName  String?
+  customerPhone String?
+  message       String?
+  status        String?  @default("pending")
+  createdAt     String?  @default("CURRENT_TIMESTAMP")
 }

@@ -5,14 +5,14 @@
  */
 
 import { z } from "zod";
-import { createChatCompletion } from "../ai.ts";
+import { createChatCompletion } from "../ai";
 import {
   allocateBudget,
-} from "../analytics/inventoryEngine.ts";
+} from "../analytics/inventoryEngine";
 import type {
   InventoryAnalysis,
   ProductMetrics,
-} from "../analytics/inventoryEngine.ts";
+} from "../analytics/inventoryEngine";
 
 // ==========================================
 // ZOD VALIDATION SCHEMAS
